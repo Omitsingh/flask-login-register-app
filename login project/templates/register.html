@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Register Page{% endblock %}
+
+{% block content %}
+<div
+  style="max-width: 350px; margin: 50px auto; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+
+  <h2 style="text-align:center; margin-bottom: 20px;">Register</h2>
+
+  {% if error %}
+  <p style="color: red; text-align:center; margin-bottom: 15px;">{{ error }}</p>
+  {% endif %}
+
+  <form method="POST" style="display: flex; flex-direction: column; gap: 12px;">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" required
+      style="padding:10px; border:1px solid #ccc; border-radius:5px;">
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required
+      style="padding:10px; border:1px solid #ccc; border-radius:5px;">
+
+    <button type="submit"
+      style="padding:12px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer;">
+      Register
+    </button>
+  </form>
+
+  <p style="text-align:center; margin-top:15px;">
+    Already have an account?
+    <a href="{{ url_for('login') }}" style="color:#007BFF; text-decoration:none;">Login here</a>
+  </p>
+</div>
+{% endblock %}

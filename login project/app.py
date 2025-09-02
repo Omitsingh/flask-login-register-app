@@ -1,0 +1,124 @@
+from flask import Flask, render_template, request, session, redirect, url_for
+from flask_mysqldb import MySQL
+
+app = Flask(__name__)
+app.secret_key = "supersecret"  # Required for session management
+
+# MySQL Config (replace with the new user you created)
+app.config["MYSQL_HOST"] = "localhost"
+app.config["MYSQL_USER"] = "myuser"  # 👈 your new MySQL username
+app.config["MYSQL_PASSWORD"] = "mypassword"  # 👈 your new MySQL password
+app.config["MYSQL_DB"] = "flask_app"  # 👈 database name
+
+mysql = MySQL(app)
+
+
+# About Page
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+
+# Contact Page
+@app.route("/contact", methods=["GET", "POST"])
+def contact():
+    if request.method == "POST":
+        name = request.form["name"]
+        email = request.form["email"]
+        message = request.form["message"]
+        # Here you can save the data to database or send email
+        return f"Thank you {name}, we received your message!"
+    return render_template("contact.html")
+
+
+# -------------------- LOGIN --------------------
+@app.route("/", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        # Check user in database
+        cursor = mysql.connection.cursor()
+        cursor.execute(
+            "SELECT * FROM users WHERE username = %s AND password = %s",
+            (username, password),
+        )
+        user = cursor.fetchone()
+        cursor.close()
+
+        if user:  # if found
+            session["user"] = username
+            return redirect(url_for("welcome"))
+        else:
+            return render_template("login.html", error="❌ Invalid credentials")
+
+    return render_template("login.html", error=None)
+
+
+# -------------------- REGISTER --------------------
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        cursor = mysql.connection.cursor()
+
+        try:
+            cursor.execute(
+                "INSERT INTO users (username, password) VALUES (%s, %s)",
+                (username, password),
+            )
+            mysql.connection.commit()
+            msg = "✅ Registration successful! Please login."
+            return redirect(url_for("login"))
+        except Exception as e:
+            mysql.connection.rollback()
+            msg = f"⚠️ Error: {str(e)}"
+            return render_template("register.html", error=msg)
+        finally:
+            cursor.close()
+
+    return render_template("register.html")
+
+
+# -------------------- WELCOME --------------------
+@app.route("/welcome")
+def welcome():
+    if "user" in session:
+        return render_template("welcome.html", user=session["user"])
+    return redirect(url_for("login"))
+
+
+# -------------------- LOGOUT --------------------
+@app.route("/logout")
+def logout():
+    session.pop("user", None)
+    return redirect(url_for("login"))
+
+
+# ---------------------- user------------------
+@app.route("/users")
+def show_users():
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT * FROM users")  # or users, depending on your table name
+    users = cursor.fetchall()
+    cursor.close()
+    return render_template("user.html", users=users)
+
+
+# ------------------------------delet--------------------
+
+
+@app.route("/delete/<int:user_id>")
+def delete_user(user_id):
+    cursor = mysql.connection.cursor()
+    cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+    mysql.connection.commit()
+    cursor.close()
+    return redirect(url_for("show_users"))
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
